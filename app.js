@@ -262,6 +262,14 @@ Powodzenia w nagraniach!`,
       }
       el.scriptSelect.appendChild(opt);
     });
+    el.scriptSelect.value = activeScriptId;
+  }
+
+  function updateSelectOptionTitle(scriptId, newTitle) {
+    const opt = el.scriptSelect.querySelector(`option[value="${scriptId}"]`);
+    if (opt) {
+      opt.textContent = newTitle || 'Bez tytułu';
+    }
   }
 
   function getActiveScript() {
@@ -273,21 +281,32 @@ Powodzenia w nagraniach!`,
     if (!script) return;
     el.scriptTitle.value = script.title || '';
     el.scriptContent.value = script.content || '';
+    el.scriptSelect.value = activeScriptId;
     updateStats();
   }
 
-  function saveCurrentEditorContent() {
+  function saveCurrentEditorContent(updateSelectTitle = false) {
     const script = getActiveScript();
     if (!script) return;
     script.title = el.scriptTitle.value.trim() || 'Bez tytułu';
     script.content = el.scriptContent.value;
     script.updated_at = Date.now();
     saveScripts();
-    renderScriptSelect();
+    if (updateSelectTitle) {
+      updateSelectOptionTitle(script.id, script.title);
+    }
     updateStats();
   }
 
   function createNewScript(title = 'Nowy Skrypt', content = '') {
+    // Zapisz aktualny stan przed utworzeniem nowego
+    const current = getActiveScript();
+    if (current) {
+      current.title = el.scriptTitle.value.trim() || 'Bez tytułu';
+      current.content = el.scriptContent.value;
+      current.updated_at = Date.now();
+    }
+
     const newScript = {
       id: 'script-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
       title: title,
@@ -304,6 +323,10 @@ Powodzenia w nagraniach!`,
   function duplicateCurrentScript() {
     const current = getActiveScript();
     if (!current) return;
+    current.title = el.scriptTitle.value.trim() || 'Bez tytułu';
+    current.content = el.scriptContent.value;
+    current.updated_at = Date.now();
+
     createNewScript((current.title || 'Skrypt') + ' (Kopia)', current.content);
   }
 
@@ -763,20 +786,30 @@ Powodzenia w nagraniach!`,
   function setupEventListeners() {
     // 1. Zmiana skryptu w selektorze
     el.scriptSelect.addEventListener('change', e => {
-      saveCurrentEditorContent();
-      activeScriptId = e.target.value;
-      loadActiveScriptToEditor();
+      const selectedId = e.target.value;
+      if (!selectedId || selectedId === activeScriptId) return;
+
+      // Zapisz aktualny stan poprzedniego skryptu
+      const prev = getActiveScript();
+      if (prev) {
+        prev.title = el.scriptTitle.value.trim() || 'Bez tytułu';
+        prev.content = el.scriptContent.value;
+        prev.updated_at = Date.now();
+      }
+
+      activeScriptId = selectedId;
       saveScripts();
+      loadActiveScriptToEditor();
     });
 
     // 2. Edycja tytułu i treści
     el.scriptTitle.addEventListener('input', () => {
-      saveCurrentEditorContent();
+      saveCurrentEditorContent(true);
     });
 
     el.scriptContent.addEventListener('input', () => {
       updateStats();
-      saveCurrentEditorContent();
+      saveCurrentEditorContent(false);
     });
 
     // 3. Przyciski zarządzania skryptami
