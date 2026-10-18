@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Teleprompter Online | Prosty, szybki i profesjonalny</title>
+  <meta name="description" content="Lekki teleprompter online na telefon (iOS, Android) i komputer. Obsługa odbicia lustrzanego w pionie i poziomie, płynna regulacja prędkości, wgrywanie plików TXT i MD.">
+  
+  <!-- PWA & Mobile Web App Meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Teleprompter">
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ==================== GŁÓWNY INTERFEJS EDYTORA ==================== -->
+  <div id="editor-view" class="view-container">
+    
+    <!-- Pasek Nawigacyjny -->
+    <header class="app-header">
+      <div class="logo-area">
+        <img src="icons/icon.svg" alt="Teleprompter Logo" class="app-logo" width="36" height="36">
+        <div class="logo-text">
+          <h1>Teleprompter</h1>
+          <span class="badge-online">Online / Offline</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Wybór skryptu -->
+        <div class="script-selector-wrap">
+          <label for="script-select" class="sr-only">Wybierz skrypt</label>
+          <select id="script-select" class="select-input" title="Twoje zapisane teksty">
+            <!-- Wypełniane dynamicznie przez JS -->
+          </select>
+        </div>
+
+        <button id="btn-share-qr" class="btn btn-secondary btn-icon-text" title="Zeskanuj telefonem lub udostępnij link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span class="btn-text">Telefon / QR</span>
+        </button>
+
+        <button id="btn-cloud-sync" class="btn btn-secondary btn-icon-text" title="Konto i synchronizacja chmurowa">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"></path><polyline points="13 11 13 21 17 17"></polyline><polyline points="13 21 9 17"></polyline></svg>
+          <span class="btn-text">Konto / Chmura</span>
+        </button>
+
+        <button id="btn-shortcuts" class="btn btn-icon" title="Skróty klawiszowe">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M6 12h.001M10 12h.001M14 12h.001M18 12h.001M8 16h8"></path></svg>
+        </button>
+
+        <!-- Główny przycisk startu -->
+        <button id="btn-launch-prompter" class="btn btn-primary btn-launch">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span>Uruchom Prompter</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Główna zawartość: Edytor + Panel Ustawień -->
+    <main class="main-layout">
+      
+      <!-- Lewa / Główna Kolumna: Edytor tekstu i zarządzanie plikami -->
+      <section class="editor-section">
+        
+        <!-- Pasek narzędziowy skryptu -->
+        <div class="editor-toolbar">
+          <div class="title-input-wrap">
+            <input type="text" id="script-title" class="title-input" placeholder="Tytuł wystąpienia..." value="Mój Pierwszy Skrypt">
+            <span id="save-status" class="save-status" title="Status zapisu">Zapisano lokalnie</span>
+          </div>
+
+          <div class="toolbar-buttons">
+            <!-- Wgrywanie pliku -->
+            <label class="btn btn-secondary btn-file" title="Wgraj plik TXT lub Markdown (.md)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              <span>Wgraj plik (.txt, .md)</span>
+              <input type="file" id="file-uploader" accept=".txt,.md,text/plain,text/markdown" class="sr-only">
+            </label>
+
+            <!-- Nowy skrypt -->
+            <button id="btn-new-script" class="btn btn-secondary" title="Utwórz nowy pusty skrypt">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Nowy</span>
+            </button>
+
+            <!-- Duplikuj -->
+            <button id="btn-duplicate-script" class="btn btn-secondary" title="Duplikuj bieżący skrypt">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Kopia</span>
+            </button>
+
+            <!-- Pobierz TXT -->
+            <button id="btn-download-txt" class="btn btn-secondary" title="Pobierz jako plik .txt">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </button>
+
+            <!-- Usuń skrypt -->
+            <button id="btn-delete-script" class="btn btn-secondary btn-danger-hover" title="Usuń bieżący skrypt">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pole tekstowe z obsługą Drag & Drop -->
+        <div id="drop-zone" class="drop-zone-wrap">
+          <textarea id="script-content" class="script-textarea" spellcheck="false" placeholder="Wpisz lub wklej swój tekst tutaj, albo przeciągnij i upuść plik .txt / .md..."></textarea>
+          
+          <div class="drop-overlay">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <p>Upuść plik tekstowy (.txt, .md), aby go wczytać</p>
+          </div>
+        </div>
+
+        <!-- Statystyki tekstu -->
+        <footer class="editor-stats-bar">
+          <div class="stat-item">
+            <span class="stat-label">Słowa:</span>
+            <span id="stat-words" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Znaki:</span>
+            <span id="stat-chars" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Czas czytania (~130 słów/min):</span>
+            <span id="stat-reading-time" class="stat-value stat-highlight">0m 00s</span>
+          </div>
+        </footer>
+
+      </section>
+
+      <!-- Prawa Kolumna / Panel Boczny: Ustawienia Promptera -->
+      <aside class="settings-sidebar">
+        <h2 class="sidebar-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Ustawienia Wyświetlania
+        </h2>
+
+        <!-- 1. Odbicie lustrzane -->
+        <div class="setting-group">
+          <label class="setting-label">
+            Odbicie lustrzane (Mirror)
+            <span class="info-tip" title="Wybierz odbicie w zależności od konstrukcji Twojego telepromptera">ℹ️</span>
+          </label>
+          <div class="mirror-toggles-grid">
+            <button type="button" class="btn-toggle active" data-mirror="none" title="Zwykły tekst bez odbicia">
+              Normalny
+            </button>
+            <button type="button" class="btn-toggle" data-mirror="h" title="Odbicie w poziomie (standardowe szkło promptera 45°)">
+              🪞 Poziome (Prompter)
+            </button>
+            <button type="button" class="btn-toggle" data-mirror="v" title="Odbicie w pionie (od góry do dołu)">
+              Pionowe
+            </button>
+            <button type="button" class="btn-toggle" data-mirror="both" title="Odwrócenie w obu osiach (180°)">
+              Poziome + Pionowe
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Prędkość przewijania -->
+        <div class="setting-group">
+          <div class="setting-header-inline">
+            <label for="speed-slider" class="setting-label">Prędkość przewijania</label>
+            <span id="speed-val" class="setting-value-badge">45 px/s</span>
+          </div>
+          <div class="slider-with-controls">
+            <button type="button" id="speed-minus" class="btn btn-icon btn-stepper" title="Zwolnij">-</button>
+            <input type="range" id="speed-slider" min="10" max="180" step="5" value="45" class="range-slider">
+            <button type="button" id="speed-plus" class="btn btn-icon btn-stepper" title="Przyspiesz">+</button>
+          </div>
+          <div class="speed-presets">
+            <button type="button" class="btn-pill" data-speed="25">Wolno</button>
+            <button type="button" class="btn-pill active" data-speed="45">Standard</button>
+            <button type="button" class="btn-pill" data-speed="75">Szybko</button>
+            <button type="button" class="btn-pill" data-speed="110">Ekspres</button>
+          </div>
+        </div>
+
+        <!-- 3. Rozmiar czcionki -->
+        <div class="setting-group">
+          <div class="setting-header-inline">
+            <label for="font-size-slider" class="setting-label">Rozmiar czcionki</label>
+            <span id="font-size-val" class="setting-value-badge">56 px</span>
+          </div>
+          <div class="slider-with-controls">
+            <button type="button" id="font-minus" class="btn btn-icon btn-stepper" title="Mniejsza czcionka">-</button>
+            <input type="range" id="font-size-slider" min="24" max="110" step="2" value="56" class="range-slider">
+            <button type="button" id="font-plus" class="btn btn-icon btn-stepper" title="Większa czcionka">+</button>
+          </div>
+        </div>
+
+        <!-- 4. Wyrównanie tekstu -->
+        <div class="setting-group">
+          <label class="setting-label">Wyrównanie tekstu</label>
+          <div class="btn-group-toggle">
+            <button type="button" class="btn-toggle active" data-align="center">Środek</button>
+            <button type="button" class="btn-toggle" data-align="left">Do lewej</button>
+            <button type="button" class="btn-toggle" data-align="right">Do prawej</button>
+          </div>
+        </div>
+
+        <!-- 5. Szerokość marginesów czytania -->
+        <div class="setting-group">
+          <div class="setting-header-inline">
+            <label for="margin-slider" class="setting-label">Szerokość kolumny tekstu</label>
+            <span id="margin-val" class="setting-value-badge">85%</span>
+          </div>
+          <input type="range" id="margin-slider" min="40" max="100" step="5" value="85" class="range-slider">
+          <span class="setting-subtext">Węższa kolumna ułatwia czytanie bez wodzenia oczami na boki.</span>
+        </div>
+
+        <!-- 6. Kolor tekstu -->
+        <div class="setting-group">
+          <label class="setting-label">Kolor tekstu</label>
+          <div class="color-picker-grid">
+            <button type="button" class="color-dot active" data-color="#ffffff" style="--c: #ffffff;" title="Czysta biel (Maksymalny kontrast)"></button>
+            <button type="button" class="color-dot" data-color="#fef08a" style="--c: #fef08a;" title="Ciepły żółty (Mniejsze zmęczenie oczu)"></button>
+            <button type="button" class="color-dot" data-color="#4ade80" style="--c: #4ade80;" title="Zielony studyjny"></button>
+            <button type="button" class="color-dot" data-color="#38bdf8" style="--c: #38bdf8;" title="Chłodny błękit"></button>
+          </div>
+        </div>
+
+        <!-- 7. Dodatkowe ułatwienia -->
+        <div class="setting-group toggles-list">
+          <label class="checkbox-row">
+            <input type="checkbox" id="toggle-eyeline" checked>
+            <span class="custom-check"></span>
+            <span class="checkbox-text">Wskaźnik linii wzroku (Linia czytania)</span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="toggle-countdown" checked>
+            <span class="custom-check"></span>
+            <span class="checkbox-text">Odliczanie 3.. 2.. 1.. przed startem</span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="toggle-wakelock" checked>
+            <span class="custom-check"></span>
+            <span class="checkbox-text">Blokada wygaszania ekranu (Wake Lock)</span>
+          </label>
+        </div>
+
+      </aside>
+
+    </main>
+
+  </div>
+
+
+  <!-- ==================== PEŁNOEKRANOWY TELEPROMPTER ==================== -->
+  <div id="prompter-view" class="prompter-container hidden">
+
+    <!-- Wskaźnik linii wzroku (Eyeline guide) -->
+    <div id="eyeline-guide" class="eyeline-guide">
+      <div class="guide-arrow guide-left">▶</div>
+      <div class="guide-line"></div>
+      <div class="guide-arrow guide-right">◀</div>
+    </div>
+
+    <!-- Pływający pasek HUD (Ukrywa się automatycznie podczas czytania) -->
+    <div id="prompter-hud" class="prompter-hud">
+      <div class="hud-left">
+        <button id="hud-btn-exit" class="btn-hud" title="Wyjdź (Esc)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+          <span class="hud-label">Zakończ</span>
+        </button>
+
+        <button id="hud-btn-restart" class="btn-hud" title="Wróć na początek tekstu (R)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+          <span class="hud-label">Od nowa</span>
+        </button>
+      </div>
+
+      <!-- Centrum: Start / Pauza -->
+      <div class="hud-center">
+        <button id="hud-btn-playpause" class="btn-hud-play" title="Start / Pauza (Spacja lub kliknięcie w ekran)">
+          <svg id="hud-icon-play" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <svg id="hud-icon-pause" class="hidden" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+        </button>
+      </div>
+
+      <!-- Prawa strona: Szybka regulacja prędkości, czcionki, lustra i pełnego ekranu -->
+      <div class="hud-right">
+        <!-- Prędkość -->
+        <div class="hud-stepper">
+          <button id="hud-speed-minus" class="hud-step-btn" title="Zmniejsz prędkość">-</button>
+          <span id="hud-speed-display" class="hud-step-val">45</span>
+          <button id="hud-speed-plus" class="hud-step-btn" title="Zwiększ prędkość">+</button>
+        </div>
+
+        <!-- Czcionka -->
+        <div class="hud-stepper">
+          <button id="hud-font-minus" class="hud-step-btn" title="Mniejszy tekst">A-</button>
+          <button id="hud-font-plus" class="hud-step-btn" title="Większy tekst">A+</button>
+        </div>
+
+        <!-- Szybkie przełączenie lustra (H-Flip) -->
+        <button id="hud-btn-flip" class="btn-hud btn-hud-icon-only" title="Odwróć lustrzanie w poziomie (M)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 8 3 12 7 16"></polyline><line x1="3" y1="12" x2="21" y2="12"></line><polyline points="17 8 21 12 17 16"></polyline><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"></line></svg>
+        </button>
+
+        <!-- Pełny ekran -->
+        <button id="hud-btn-fullscreen" class="btn-hud btn-hud-icon-only" title="Pełny ekran (F)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Pasek statusu u dołu (czas, postęp, wskaźnik blokady ekranu) -->
+    <div id="prompter-bottom-bar" class="prompter-bottom-bar">
+      <div class="bottom-stat">
+        <span id="prompter-wakelock-dot" class="status-dot dot-active" title="Blokada wygaszania ekranu aktywna"></span>
+        <span id="prompter-wakelock-text">Ekran aktywny</span>
+      </div>
+      <div class="bottom-stat">
+        <span id="prompter-progress-text">0%</span>
+      </div>
+      <div class="bottom-stat">
+        <span class="stat-shortcut-hint">Dotknij ekranu lub naciśnij [Spację], aby zatrzymać / wznowić</span>
+      </div>
+    </div>
+
+    <!-- Kontener przewijania tekstu -->
+    <div id="prompter-scroll-viewport" class="prompter-scroll-viewport">
+      <div id="prompter-text-track" class="prompter-text-track">
+        <!-- Renderowany tekst promptera -->
+      </div>
+    </div>
+
+    <!-- Nakładka odliczania 3.. 2.. 1.. -->
+    <div id="countdown-overlay" class="countdown-overlay hidden">
+      <div id="countdown-number" class="countdown-number">3</div>
+    </div>
+
+  </div>
+
+
+  <!-- ==================== MODAL: UDOSTĘPNIANIE / KOD QR NA TELEFON ==================== -->
+  <div id="modal-qr" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <h3 class="modal-title">Otwórz na telefonie w 3 sekundy</h3>
+        </div>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+
+      <div class="modal-body text-center">
+        <p class="modal-desc">
+          Skieruj aparat telefonu na poniższy kod QR. Tekst i Twoje ustawienia otworzą się od razu na smartfonie – bez logowania i bez kabli!
+        </p>
+
+        <div class="qr-container-wrap">
+          <div id="qr-code-canvas" class="qr-canvas"></div>
+        </div>
+
+        <div class="share-link-box">
+          <input type="text" id="share-link-input" class="share-input" readonly>
+          <button id="btn-copy-link" class="btn btn-primary">Kopiuj link</button>
+        </div>
+        <span id="copy-feedback" class="copy-feedback hidden">✅ Skopiowano link do schowka!</span>
+      </div>
+
+      <div class="modal-footer">
+        <p class="small-hint">💡 <strong>Wskazówka:</strong> Po otwarciu na telefonie kliknij „Udostępnij” -> „Dodaj do ekranu początkowego” na iOS lub „Zainstaluj” na Androidzie, by używać pełnego ekranu bez pasków przeglądarki!</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== MODAL: SYNCHRONIZACJA CHMUROWA / KONTO ==================== -->
+  <div id="modal-cloud" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"></path><polyline points="13 11 13 21 17 17"></polyline><polyline points="13 21 9 17"></polyline></svg>
+          <h3 class="modal-title">Konto i Kopia Zapasowa</h3>
+        </div>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="cloud-status-box">
+          <div class="status-icon-wrap">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          </div>
+          <div>
+            <strong>Lokalna pamięć podręczna (Aktywna)</strong>
+            <p>Twoje teksty i preferencje są bezpiecznie zapisywane w Twojej przeglądarce (LocalStorage).</p>
+          </div>
+        </div>
+
+        <div class="cloud-sync-info">
+          <h4>Opcja 1: Błyskawiczny transfer kodem QR (Zalecane)</h4>
+          <p>Nie musisz zakładać konta. Wystarczy kliknąć <strong>Telefon / QR</strong> u góry strony i zeskanować kod aparatem telefonu.</p>
+
+          <h4 style="margin-top: 1.25rem;">Opcja 2: Integracja z Chmurą (Supabase / Własna baza)</h4>
+          <p>Jeśli chcesz automatycznej synchronizacji w czasie rzeczywistym między wieloma stanowiskami, możesz wkleić dane swojego darmowego projektu Supabase:</p>
+          
+          <div class="form-group">
+            <label for="cloud-url" class="form-label">Supabase Project URL:</label>
+            <input type="text" id="cloud-url" class="form-input" placeholder="https://twoj-projekt.supabase.co">
+          </div>
+
+          <div class="form-group">
+            <label for="cloud-key" class="form-label">Supabase Anon Key:</label>
+            <input type="password" id="cloud-key" class="form-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6...">
+          </div>
+
+          <button id="btn-save-cloud-config" class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;">Zapisz konfigurację chmury</button>
+        </div>
+
+        <div class="backup-actions">
+          <h4>Eksport i Kopia Zapasowa</h4>
+          <div class="btn-group-row">
+            <button id="btn-export-all" class="btn btn-secondary">Eksportuj wszystkie skrypty (JSON)</button>
+            <label class="btn btn-secondary btn-file">
+              Importuj kopię zapasową
+              <input type="file" id="import-all-file" accept=".json" class="sr-only">
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== MODAL: SKRÓTY KLAWISZOWE ==================== -->
+  <div id="modal-shortcuts" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Skróty Klawiszowe i Sterowanie</h3>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="shortcuts-grid">
+          <div class="shortcut-item">
+            <kbd class="key">Spacja</kbd> lub <kbd class="key">Kliknięcie</kbd>
+            <span>Start / Pauza przewijania</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd class="key">↑</kbd> / <kbd class="key">↓</kbd>
+            <span>Zwiększ / Zmniejsz prędkość</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd class="key">←</kbd> / <kbd class="key">→</kbd>
+            <span>Zmniejsz / Zwiększ czcionkę</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd class="key">R</kbd>
+            <span>Reset na początek tekstu</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd class="key">M</kbd>
+            <span>Szybkie odwrócenie lustrzane (H-Flip)</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd class="key">F</kbd>
+            <span>Tryb pełnoekranowy</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd class="key">Esc</kbd>
+            <span>Wyjście z trybu promptera</span>
+          </div>
+        </div>
+        <p class="small-hint" style="margin-top: 1rem;">📱 Na telefonie: Dotknij dowolnego miejsca ekranu, aby zatrzymać lub wznowić przewijanie. Możesz też swobodnie przewijać tekst palcem w trakcie pauzy.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Skrypty -->
+  <script src="js/qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
