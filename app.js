@@ -501,6 +501,18 @@ Powodzenia w nagraniach!`,
     updatePrompterStyles();
   }
 
+  function isYInverted() {
+    return settings.mirror === 'v' || settings.mirror === 'both';
+  }
+
+  function getMaxScroll() {
+    return Math.max(0, el.prompterScrollViewport.scrollHeight - el.prompterScrollViewport.clientHeight);
+  }
+
+  function getStartScrollPos() {
+    return isYInverted() ? getMaxScroll() : 0;
+  }
+
   function updatePrompterStyles() {
     // Odbicie lustrzane
     el.prompterTextTrack.className = 'prompter-text-track mirror-' + settings.mirror;
@@ -510,6 +522,13 @@ Powodzenia w nagraniach!`,
     el.prompterTextTrack.style.textAlign = settings.align;
     el.prompterTextTrack.style.maxWidth = settings.margin + '%';
     el.prompterTextTrack.style.color = settings.color;
+
+    // Pozycja linii wzroku: w odbiciu pionowym linia odbija się symetrycznie (100% - 38% = 62%)
+    if (isYInverted()) {
+      el.eyelineGuide.style.top = '62%';
+    } else {
+      el.eyelineGuide.style.top = '38%';
+    }
 
     // Linia wzroku
     el.eyelineGuide.classList.toggle('hidden', !settings.eyeline);
@@ -536,9 +555,12 @@ Powodzenia w nagraniach!`,
     el.prompterView.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
-    // Reset pozycji
-    scrollPos = 0;
-    el.prompterScrollViewport.scrollTop = 0;
+    // Wymuszenie przeliczenia geometrii layoutu
+    void el.prompterScrollViewport.offsetHeight;
+
+    // Ustawienie prawidłowej pozycji startowej (dla V-Flip od dołu, gdzie jest początek odwróconego tekstu)
+    scrollPos = getStartScrollPos();
+    el.prompterScrollViewport.scrollTop = scrollPos;
     updateProgressIndicator();
 
     // Reset ikonki pauzy / startu
@@ -637,26 +659,40 @@ Powodzenia w nagraniach!`,
 
     // Zabezpieczenie przed skokami powyżej 0.1s (np. przełączenie karty)
     const clampedDelta = Math.min(deltaSec, 0.1);
+    const maxScroll = getMaxScroll();
 
-    scrollPos += settings.speed * clampedDelta;
-    el.prompterScrollViewport.scrollTop = scrollPos;
-
-    updateProgressIndicator();
-
-    // Sprawdź czy dotarliśmy do końca
-    const maxScroll = el.prompterScrollViewport.scrollHeight - el.prompterScrollViewport.clientHeight;
-    if (scrollPos >= maxScroll) {
-      stopScrolling();
-      return;
+    if (isYInverted()) {
+      // W trybie pionowego lustra przewijamy w stronę 0 (początek odwróconego tekstu przesuwa się w stronę końca)
+      scrollPos -= settings.speed * clampedDelta;
+      if (scrollPos <= 0) {
+        scrollPos = 0;
+        el.prompterScrollViewport.scrollTop = 0;
+        updateProgressIndicator();
+        stopScrolling();
+        return;
+      }
+    } else {
+      // W trybie normalnym i H-Flip przewijamy w dół (w stronę maxScroll)
+      scrollPos += settings.speed * clampedDelta;
+      if (scrollPos >= maxScroll) {
+        scrollPos = maxScroll;
+        el.prompterScrollViewport.scrollTop = maxScroll;
+        updateProgressIndicator();
+        stopScrolling();
+        return;
+      }
     }
+
+    el.prompterScrollViewport.scrollTop = scrollPos;
+    updateProgressIndicator();
 
     rafId = requestAnimationFrame(scrollLoop);
   }
 
   function restartPrompter() {
     stopScrolling();
-    scrollPos = 0;
-    el.prompterScrollViewport.scrollTop = 0;
+    scrollPos = getStartScrollPos();
+    el.prompterScrollViewport.scrollTop = scrollPos;
     updateProgressIndicator();
     if (settings.countdown) {
       runCountdown(() => {
@@ -668,13 +704,19 @@ Powodzenia w nagraniach!`,
   }
 
   function updateProgressIndicator() {
-    const maxScroll = el.prompterScrollViewport.scrollHeight - el.prompterScrollViewport.clientHeight;
+    const maxScroll = getMaxScroll();
     if (maxScroll <= 0) {
       el.prompterProgressText.textContent = '100%';
       return;
     }
     const current = el.prompterScrollViewport.scrollTop;
-    const pct = Math.min(100, Math.max(0, Math.round((current / maxScroll) * 100)));
+    let pct;
+    if (isYInverted()) {
+      pct = Math.round(((maxScroll - current) / maxScroll) * 100);
+    } else {
+      pct = Math.round((current / maxScroll) * 100);
+    }
+    pct = Math.min(100, Math.max(0, pct));
     el.prompterProgressText.textContent = `${pct}%`;
   }
 
